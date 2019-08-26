@@ -14,10 +14,26 @@
 #include "recursive_spawn.h"
 #include "common.h"
 
+
+namespace Kokkos {
+namespace Experimental {
+   extern void * ers;
+   extern replicated EmuReplicatedSpace els;
+   extern void initialize_memory_space();
+}}
+
+typedef Kokkos::View< long*, Kokkos::Experimental::EmuStridedSpace > ViewVectorType;
+
+//Cheat and make N a global variable
+long N=1000;
+
+
 typedef struct local_stream_data {
-    long * a;
-    long * b;
-    long * c;
+    Kokkos::View<long*, Kokkos::Experimental::EmuStridedSpace> a ("a",N);
+    //ViewVectorType b("b",N);
+    ViewVectorType c("c",N);
+    //long * b;
+    //long * c;
     long n;
     long num_threads;
 } local_stream_data;
@@ -26,19 +42,20 @@ void
 local_stream_init(local_stream_data * data, long n)
 {
     data->n = n;
-    data->a = (long*)mw_localmalloc(n * sizeof(long), data);
-    assert(data->a);
-    data->b = (long*)mw_localmalloc(n * sizeof(long), data);
-    assert(data->b);
-    data->c = (long*)mw_localmalloc(n * sizeof(long), data);
-    assert(data->c);
-#ifndef NO_VALIDATE
-    emu_local_for_set_long(data->a, n, 1);
-    emu_local_for_set_long(data->b, n, 2);
-    emu_local_for_set_long(data->c, n, 0);
-#endif
+    //data->a = (long*)mw_localmalloc(n * sizeof(long), data);
+    //assert(data->a);
+    //data->b = (long*)mw_localmalloc(n * sizeof(long), data);
+    //assert(data->b);
+    //data->c = (long*)mw_localmalloc(n * sizeof(long), data);
+    //assert(data->c);
+//#ifndef NO_VALIDATE
+//    emu_local_for_set_long(data->a, n, 1);
+//    emu_local_for_set_long(data->b, n, 2);
+//    emu_local_for_set_long(data->c, n, 0);
+//#endif
 }
 
+/*
 void
 local_stream_deinit(local_stream_data * data)
 {
@@ -46,24 +63,30 @@ local_stream_deinit(local_stream_data * data)
     free(data->b);
     free(data->c);
 }
+*/
 
+/*
 void
 local_stream_add_serial(local_stream_data * data)
 {
-    for (long i = 0; i < data->n; ++i) {
-        data->c[i] = data->a[i] + data->b[i];
+    Kokkos::parallel_for(N, KOKKOS_LAMBDA (const long i) {
+    //for (long i = 0; i < data->n; ++i) {
+        data->c(i) = data->a(i) + data->b(i);
     }
-}
+}*/
 
 void
 local_stream_add_cilk_for(local_stream_data * data)
 {
-    #pragma cilk grainsize = data->n / data->num_threads
-    cilk_for (long i = 0; i < data->n; ++i) {
-        data->c[i] = data->a[i] + data->b[i];
-    }
+    //#pragma cilk grainsize = data->n / data->num_threads
+    Kokkos::parallel_for(N, KOKKOS_LAMBDA (const long i) {
+    //cilk_for (long i = 0; i < data->n; ++i) {
+        data->c(i) = data->a(i);
+        //data->c(i) = data->a(i) + data->b(i);
+    } );
 }
 
+/*
 static void
 recursive_spawn_add_worker(long begin, long end, local_stream_data *data)
 {
@@ -113,6 +136,7 @@ void local_stream_add_library(local_stream_data * data)
         local_stream_add_library_worker, data->a, data->b, data->c
     );
 }
+*/
 
 void local_stream_run(
     local_stream_data * data,
@@ -131,6 +155,7 @@ void local_stream_run(
     }
 }
 
+/*
 static void
 local_stream_validate_worker(long begin, long end, va_list args)
 {
@@ -150,7 +175,7 @@ local_stream_validate(local_stream_data * data)
         local_stream_validate_worker, data->c
     );
 }
-
+*/
 
 int main(int argc, char** argv)
 {
@@ -178,19 +203,22 @@ int main(int argc, char** argv)
   Kokkos::initialize( argc, argv );
   {
 
-    long n = 1L << args.log2_num_elements;
+    Kokkos::Experimental::initialize_memory_space();
+
+    N = 1L << args.log2_num_elements;
     LOG("Initializing arrays with %li elements each (%li MiB)\n",
-        n, (n * sizeof(long)) / (1024*1024)); fflush(stdout);
+        N, (N * sizeof(long)) / (1024*1024)); fflush(stdout);
     local_stream_data data;
     data.num_threads = args.num_threads;
-    local_stream_init(&data, n);
+    local_stream_init(&data, N);
     LOG("Doing vector addition using %s\n", args.mode); fflush(stdout);
 
     #define RUN_BENCHMARK(X) local_stream_run(&data, args.mode, X, args.num_trials)
 
     if (!strcmp(args.mode, "cilk_for")) {
         RUN_BENCHMARK(local_stream_add_cilk_for);
-    } else if (!strcmp(args.mode, "serial_spawn")) {
+    } 
+    /*else if (!strcmp(args.mode, "serial_spawn")) {
         RUN_BENCHMARK(local_stream_add_serial_spawn);
     } else if (!strcmp(args.mode, "recursive_spawn")) {
         RUN_BENCHMARK(local_stream_add_recursive_spawn);
@@ -200,14 +228,16 @@ int main(int argc, char** argv)
         RUN_BENCHMARK(local_stream_add_serial);
     } else {
         LOG("Mode %s not implemented!", args.mode);
-    }
+    }*/
+
 #ifndef NO_VALIDATE
     LOG("Validating results...");
-    local_stream_validate(&data);
+    //local_stream_validate(&data);
     LOG("OK\n");
 #endif
-    local_stream_deinit(&data);
+    //local_stream_deinit(&data);
     
+
     }
     Kokkos::finalize();
     
