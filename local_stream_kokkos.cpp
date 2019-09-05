@@ -25,17 +25,16 @@ namespace Experimental {
 typedef Kokkos::View< long*, Kokkos::Experimental::EmuStridedSpace > ViewVectorType;
 
 //Cheat and make N a global variable
-long N=1000;
+long N;
 
 
 typedef struct local_stream_data {
-    Kokkos::View<long*, Kokkos::Experimental::EmuStridedSpace> a ("a",N);
-    //ViewVectorType b("b",N);
-    ViewVectorType c("c",N);
-    //long * b;
-    //long * c;
+    ViewVectorType a;
+    ViewVectorType b;
+    ViewVectorType c;
     long n;
     long num_threads;
+   local_stream_data(): a("a",(size_t)N), b("b",(size_t)N), c("c",(size_t)N) {}
 } local_stream_data;
 
 void
@@ -55,6 +54,7 @@ local_stream_init(local_stream_data * data, long n)
 //#endif
 }
 
+//Kokkos::finalize handles deintialization
 /*
 void
 local_stream_deinit(local_stream_data * data)
@@ -65,34 +65,34 @@ local_stream_deinit(local_stream_data * data)
 }
 */
 
-/*
+
 void
 local_stream_add_serial(local_stream_data * data)
 {
-    Kokkos::parallel_for(N, KOKKOS_LAMBDA (const long i) {
+    Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
     //for (long i = 0; i < data->n; ++i) {
         data->c(i) = data->a(i) + data->b(i);
-    }
-}*/
+    } );
+}
 
 void
 local_stream_add_cilk_for(local_stream_data * data)
 {
     //#pragma cilk grainsize = data->n / data->num_threads
-    Kokkos::parallel_for(N, KOKKOS_LAMBDA (const long i) {
+    Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
     //cilk_for (long i = 0; i < data->n; ++i) {
-        data->c(i) = data->a(i);
-        //data->c(i) = data->a(i) + data->b(i);
+        data->c(i) = data->a(i) + data->b(i);
     } );
 }
 
-/*
+
 static void
 recursive_spawn_add_worker(long begin, long end, local_stream_data *data)
 {
-    for (long i = begin; i < end; ++i) {
-        data->c[i] = data->a[i] + data->b[i];
-    }
+    Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
+    //for (long i = begin; i < end; ++i) {
+        data->c(i) = data->a(i) + data->b(i);
+    } );
 }
 
 static void
@@ -118,7 +118,7 @@ local_stream_add_serial_spawn(local_stream_data * data)
     }
     cilk_sync;
 }
-
+/*
 void
 local_stream_add_library_worker(long begin, long end, va_list args)
 {
@@ -188,7 +188,8 @@ int main(int argc, char** argv)
 
     if (argc != 5) {
         LOG("Usage: %s mode log2_num_elements num_threads num_trials\n", argv[0]);
-        exit(1);
+        LOG("mode=<cilk_for serial_spawn recursive_spawn library serial \n"); 
+	exit(1);
     } else { 
 	args.mode = argv[1];
         args.log2_num_elements = atol(argv[2]);
@@ -218,17 +219,18 @@ int main(int argc, char** argv)
     if (!strcmp(args.mode, "cilk_for")) {
         RUN_BENCHMARK(local_stream_add_cilk_for);
     } 
-    /*else if (!strcmp(args.mode, "serial_spawn")) {
+    else if (!strcmp(args.mode, "serial_spawn")) {
         RUN_BENCHMARK(local_stream_add_serial_spawn);
-    } else if (!strcmp(args.mode, "recursive_spawn")) {
+    }else if (!strcmp(args.mode, "recursive_spawn")) {
         RUN_BENCHMARK(local_stream_add_recursive_spawn);
-    } else if (!strcmp(args.mode, "library")) {
+    }/* else if (!strcmp(args.mode, "library")) {
         RUN_BENCHMARK(local_stream_add_library);
-    } else if (!strcmp(args.mode, "serial")) {
+    } */else if (!strcmp(args.mode, "serial")) {
         RUN_BENCHMARK(local_stream_add_serial);
     } else {
         LOG("Mode %s not implemented!", args.mode);
-    }*/
+    }
+
 
 #ifndef NO_VALIDATE
     LOG("Validating results...");
