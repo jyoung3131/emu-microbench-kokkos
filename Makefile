@@ -5,12 +5,8 @@
 #export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/emu/lib
 
 #Specify your Emu toolchain base path here for includes and linking
-ifeq ($(EMU_1902_TOOLS),1)
-	EMU_PATH = /usr/local/emu
-else
-	EMU_PATH = /tools/emu/emu-19.09-preview
-endif
-KOKKOS_PATH = ${HOME}/git_repos/sandia_kokkos/kokkos-emu-backend-mdspan2/kokkos
+EMU_PATH = /usr/local/emu
+#KOKKOS_PATH = ${HOME}/git_repos/sandia_kokkos/kokkos-emu-backend-mdspan2/kokkos
 #KOKKOS_PATH = ${HOME}/Kokkos/kokkos
 
 KOKKOS_DEVICES = "CilkPlus"
@@ -43,11 +39,7 @@ DEPFLAGS = -M
 #Switch between older and newer Kokkos libraries to test improvements
 #Make sure to also switch between toolchain versions when testing
 
-ifeq ($(EMU_1902_TOOLS),1)
-	LIBKOKKOS=libkokkos.1902.a
-else
-	LIBKOKKOS=libkokkos.1909.a
-endif
+LIBKOKKOS=libkokkos.1910.a
 
 #include $(KOKKOS_PATH)/Makefile.kokkos
 

@@ -18,7 +18,7 @@
 namespace Kokkos {
 namespace Experimental {
    extern void * ers;
-   extern replicated EmuReplicatedSpace els;
+   extern EmuStridedSpace es;
    extern void initialize_memory_space();
 }}
 
