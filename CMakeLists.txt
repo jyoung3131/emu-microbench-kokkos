@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include (ExternalProject)
 
-project(emu-microbench C CXX)
+project(emu-microbench C ASM CXX)
 
 # Use the 2011 standards for C and C++
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
@@ -41,6 +41,13 @@ if (NOT ENABLE_VALIDATION)
     add_definitions("-DNO_VALIDATE")
 endif()
 
+set(ENABLE_GRAINSIZE_COMPUTATION "OFF"
+  CACHE BOOL "Allow pragma grainsize expression. Tapir toolchain does not currently allow this, grainsize must be integral constant."
+  )
+if (NOT ENABLE_GRAINSIZE_COMPUTATION)
+  add_definitions("-DNO_GRAINSIZE_COMPUTE")
+endif()
+
 function(add_exe filename)
     string(REGEX REPLACE "\\.[^.]*$" "" name ${filename})
     add_executable(${name} ${filename})
@@ -60,6 +67,16 @@ add_exe(malloc_free.c)
 add_exe(spawn_rate.c)
 add_exe(hot_range.c)
 add_exe(hot_range_chunked.c)
+
+add_exe(allocation.cc)
+
+# 'locks' uses assembly, disable for non-Emu platform
+if (CMAKE_SYSTEM_NAME STREQUAL "Emu1")
+    add_executable(locks locks.cc lock_impls.S)
+else()
+    add_executable(locks locks.cc)
+endif()
+install(TARGETS locks RUNTIME DESTINATION ".")
 
 set(ENABLE_CXX_BENCHMARKS OFF
     CACHE BOOL "Build C++ benchmarks, which rely on emu_cxx_utils.")
