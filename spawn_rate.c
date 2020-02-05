@@ -21,7 +21,6 @@
 typedef struct spawn_rate_data {
     long * array;
     long n;
-    long num_threads;
 } spawn_rate_data;
 
 replicated spawn_rate_data data;
@@ -53,7 +52,7 @@ recursive_spawn_inline_worker(long * begin, long * end, long grain)
 {
     for (;;) {
         long count = end - begin;
-        if (count < grain) break;
+        if (count <= grain) break;
         long * mid = begin + count / 2;
         cilk_spawn recursive_spawn_inline_worker(begin, mid, grain);
         begin = mid;
@@ -67,7 +66,7 @@ recursive_spawn_light_worker(long * begin, long * end, long grain)
 {
     for (;;) {
         long count = end - begin;
-        if (count < grain) break;
+        if (count <= grain) break;
         long * mid = begin + count / 2;
         cilk_spawn recursive_spawn_light_worker(begin, mid, grain);
         begin = mid;
@@ -81,7 +80,7 @@ recursive_spawn_heavy_worker(long * begin, long * end, long grain)
 {
     for (;;) {
         long count = end - begin;
-        if (count < grain) break;
+        if (count <= grain) break;
         long * mid = begin + count / 2;
         cilk_spawn recursive_spawn_heavy_worker(begin, mid, grain);
         begin = mid;
@@ -144,18 +143,17 @@ library_heavy_worker(long begin, long end, va_list args)
 
 
 void
-init(long n, long num_threads)
+init(long n)
 {
     data.n = n;
-    data.num_threads = num_threads;
-    data.array = malloc(n * sizeof(long));
+    data.array = mw_localmalloc(n * sizeof(long), &n);
     assert(data.array);
 }
 
 void
 deinit()
 {
-    free(data.array);
+    mw_localfree(data.array);
 }
 
 void
@@ -182,155 +180,159 @@ validate()
     }
 }
 
+// Do all the writes within a single function
 noinline void
-do_serial()
+do_inline()
 {
     DO_WORK(data.array, data.array + data.n);
 }
 
+// Call light_worker on each element
 noinline void
 do_light()
 {
-    light_worker(data.array, data.array + data.n);
+    long * begin = data.array;
+    long * end = data.array + data.n;
+    for (long *i = begin; i < end; ++i) {
+        light_worker(i, i + 1);
+    }
 }
 
-// Delegate to heavy_worker
+// Call heavy_worker on each element
 noinline void
 do_heavy()
 {
-    heavy_worker(data.array, data.array + data.n);
+    long * begin = data.array;
+    long * end = data.array + data.n;
+    for (long *i = begin; i < end; ++i) {
+        heavy_worker(i, i + 1);
+    }
 }
 
+// Spawn light_worker for each element
 noinline void
 do_serial_spawn_light() {
-    serial_spawn_light_worker(data.array, data.array + data.n, data.n / data.num_threads);
+    serial_spawn_light_worker(data.array, data.array + data.n, 1);
 }
 
+// Spawn heavy_worker for each element
 noinline void
 do_serial_spawn_heavy() {
-    serial_spawn_heavy_worker(data.array, data.array + data.n, data.n / data.num_threads);
+    serial_spawn_heavy_worker(data.array, data.array + data.n, 1);
 }
 
+// Recursive spawn tree, leaf threads do work inline
 noinline void
 do_recursive_spawn_inline() {
-    recursive_spawn_inline_worker(data.array, data.array + data.n, data.n / data.num_threads);
+    recursive_spawn_inline_worker(data.array, data.array + data.n, 1);
 }
 
-
+// Recursive spawn tree, leaf threads call light_worker
 noinline void
 do_recursive_spawn_light() {
-    recursive_spawn_light_worker(data.array, data.array + data.n, data.n / data.num_threads);
+    recursive_spawn_light_worker(data.array, data.array + data.n, 1);
 }
 
+// Recursive spawn tree, leaf threads call heavy_worker
 noinline void
 do_recursive_spawn_heavy() {
-    recursive_spawn_heavy_worker(data.array, data.array + data.n, data.n / data.num_threads);
+    recursive_spawn_heavy_worker(data.array, data.array + data.n, 1);
 }
 
 // Do the work with an emu_c_utils library call
 noinline void
 do_library_inline()
 {
-    emu_local_for(0, data.n, data.n / data.num_threads, library_inline_worker, data.array);
+    emu_local_for(0, data.n, 1, library_inline_worker, data.array);
 }
 
 noinline void
 do_library_light()
 {
-    emu_local_for(0, data.n, data.n / data.num_threads, library_light_worker, data.array);
+    emu_local_for(0, data.n, 1, library_light_worker, data.array);
 }
 
 noinline void
 do_library_heavy()
 {
-    emu_local_for(0, data.n, data.n / data.num_threads, library_heavy_worker, data.array);
+    emu_local_for(0, data.n, 1, library_heavy_worker, data.array);
 }
 
 
-
-void run(const char * name, void (*benchmark)(), long num_trials)
+double
+run_baseline(const char * name, void (*benchmark)(), long num_trials)
 {
+    double total_time_ms = 0;
     for (long trial = 0; trial < num_trials; ++trial) {
         hooks_set_attr_i64("trial", trial);
         hooks_region_begin(name);
         benchmark();
-        double time_ms = hooks_region_end();
-        double bytes_per_second = time_ms == 0 ? 0 :
-            (data.n * sizeof(long)) / (time_ms/1000);
-        LOG("%3.2f MB/s\n", bytes_per_second / (1000000));
+        total_time_ms += hooks_region_end();
     }
+    return total_time_ms / num_trials;
+}
+
+void
+run_spawn(double serial_time_ms, const char * name, void (*benchmark)(), long num_trials)
+{
+    // Run the benchmark
+    double time_ms = run_baseline(name, benchmark, num_trials);
+    // Subtract the time taken to do the work serially
+    double spawn_time_ms = time_ms - serial_time_ms;
+    // Compute spawn rate in threads per second
+    double threads_per_second = spawn_time_ms == 0 ? 0 :
+        data.n / (spawn_time_ms/1000);
+    // Print result
+    LOG("%s: %3.2f million threads/s\n", name, threads_per_second / (1000000));
 }
 
 int main(int argc, char** argv)
 {
     struct {
-        const char* mode;
-        long log2_num_elements;
-        long num_threads;
+        long log2_num_threads;
         long num_trials;
     } args;
 
-    if (argc != 5) {
-        LOG("Usage: %s mode log2_num_elements num_threads num_trials\n", argv[0]);
+    if (argc != 3) {
+        LOG("Usage: %s log2_num_threads num_trials\n", argv[0]);
         exit(1);
     } else {
-        args.mode = argv[1];
-        args.log2_num_elements = atol(argv[2]);
-        args.num_threads = atol(argv[3]);
-        args.num_trials = atol(argv[4]);
+        args.log2_num_threads = atol(argv[1]);
+        args.num_trials = atol(argv[2]);
 
-        if (args.log2_num_elements <= 0) { LOG("log2_num_elements must be > 0"); exit(1); }
-        if (args.num_threads <= 0) { LOG("num_threads must be > 0"); exit(1); }
+        if (args.log2_num_threads <= 0) { LOG("num_threads must be > 0"); exit(1); }
         if (args.num_trials <= 0) { LOG("num_trials must be > 0"); exit(1); }
     }
 
-    long n = 1L << args.log2_num_elements;
-    LOG("Initializing array with %li elements each (%li MiB)\n",
+    long n = 1UL << args.log2_num_threads;
+    LOG("Initializing array with %li elements (%li MiB)\n",
         n, (n * sizeof(long)) / (1024*1024)); fflush(stdout);
 
-    init(n, args.num_threads);
+    init(n);
+    // TODO if validation desired, need to clear after each trial
     clear();
 
-    LOG("Running with %s\n", args.mode);
-
-    hooks_set_attr_str("mode", args.mode);
-    hooks_set_attr_i64("log2_num_elements", args.log2_num_elements);
-    hooks_set_attr_i64("num_threads", args.num_threads);
+    hooks_set_attr_i64("log2_num_threads", args.log2_num_threads);
     hooks_set_attr_i64("num_nodelets", NODELETS());
-    hooks_set_attr_i64("num_bytes_per_element", sizeof(long));
 
-#define RUN_BENCHMARK(X) run(args.mode, X, args.num_trials)
+    double inline_time_ms = run_baseline("inline", do_inline, args.num_trials);
+    double light_time_ms = run_baseline("light", do_light, args.num_trials);
+    double heavy_time_ms = run_baseline("heavy", do_heavy, args.num_trials);
 
-    if (!strcmp(args.mode, "serial")) {
-        RUN_BENCHMARK(do_serial);
-    } else if (!strcmp(args.mode, "light_worker")) {
-        RUN_BENCHMARK(do_light);
-    } else if (!strcmp(args.mode, "heavy_worker")) {
-        RUN_BENCHMARK(do_heavy);
-    } else if (!strcmp(args.mode, "serial_spawn_light")) {
-        RUN_BENCHMARK(do_serial_spawn_light);
-    } else if (!strcmp(args.mode, "serial_spawn_heavy")) {
-        RUN_BENCHMARK(do_serial_spawn_heavy);
-    } else if (!strcmp(args.mode, "recursive_spawn_inline")) {
-        RUN_BENCHMARK(do_recursive_spawn_inline);
-    } else if (!strcmp(args.mode, "recursive_spawn_light")) {
-        RUN_BENCHMARK(do_recursive_spawn_light);
-    } else if (!strcmp(args.mode, "recursive_spawn_heavy")) {
-        RUN_BENCHMARK(do_recursive_spawn_heavy);
-    } else if (!strcmp(args.mode, "library_inline")) {
-        RUN_BENCHMARK(do_library_inline);
-    } else if (!strcmp(args.mode, "library_light")) {
-        RUN_BENCHMARK(do_library_light);
-    } else if (!strcmp(args.mode, "library_heavy")) {
-        RUN_BENCHMARK(do_library_heavy);
-    } else {
-        LOG("Mode %s not implemented!", args.mode);
-    }
-#ifndef NO_VALIDATE
-    LOG("Validating results...");
-    validate();
-    LOG("OK\n");
-#endif
+#define RUN_BENCHMARK(SERIAL_TIME, NAME) \
+run_spawn(SERIAL_TIME, #NAME, do_##NAME, args.num_trials)
+
+    RUN_BENCHMARK(light_time_ms, serial_spawn_light);
+    RUN_BENCHMARK(heavy_time_ms, serial_spawn_heavy);
+
+    RUN_BENCHMARK(inline_time_ms, recursive_spawn_inline);
+    RUN_BENCHMARK(light_time_ms, recursive_spawn_light);
+    RUN_BENCHMARK(heavy_time_ms, recursive_spawn_heavy);
+
+    RUN_BENCHMARK(inline_time_ms, library_inline);
+    RUN_BENCHMARK(light_time_ms, library_light);
+    RUN_BENCHMARK(heavy_time_ms, library_heavy);
+
     deinit();
     return 0;
 }
