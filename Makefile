@@ -39,7 +39,7 @@ DEPFLAGS = -M
 #Switch between older and newer Kokkos libraries to test improvements
 #Make sure to also switch between toolchain versions when testing
 
-LIBKOKKOS=libkokkos.1910.a
+LIBKOKKOS=libkokkos.2001.a
 
 #include $(KOKKOS_PATH)/Makefile.kokkos
 
