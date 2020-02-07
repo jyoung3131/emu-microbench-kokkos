@@ -36,7 +36,9 @@ link_libraries(${EMU_C_UTILS_LIBRARIES})
 include_directories(${EMU_C_UTILS_INCLUDE_DIRS})
 
 if (USE_KOKKOS)
-	FIND_PACKAGE (OpenMP REQUIRED)
+	find_package(kokkos REQUIRED)
+	link_libraries(${KOKKOS_LIBRARIES})
+	include_directories(${KOKKOS_INCLUDE_DIRS})
 ENDIF ()
 
 

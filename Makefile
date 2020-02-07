@@ -18,12 +18,12 @@ ifeq (,$(findstring Emu,$(KOKKOS_DEVICES)))
 endif
 
 #ifeq ($(KOKKOS_ENABLE_EMU), 1)
-  CXX = emu-cc
+#  CXX = emu-cc
 #else
-#  CXX = g++
+  CXX = g++
 #endif
 
-CXXFLAGS = -Wall -Werror -fcilkplus -Wno-unused -Wno-uninitialized -Wno-cilk-loop-control-var-modification -O3 -DNDEBUG 
+CXXFLAGS = -std=c++11 -Wall -Werror -fcilkplus -Wno-unused -Wno-uninitialized -Wno-cilk-loop-control-var-modification -O3 -DNDEBUG 
 LINK ?= $(CXX)
 LDFLAGS ?= 
 

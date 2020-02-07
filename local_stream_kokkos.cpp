@@ -14,7 +14,6 @@
 #include "recursive_spawn.h"
 #include "common.h"
 
-
 namespace Kokkos {
 namespace Experimental {
    extern void * ers;

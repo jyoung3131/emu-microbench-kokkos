@@ -9,7 +9,7 @@ Build for emu hardware/simulator:
 mkdir build-hw && cd build-hw
 cmake .. \
 -DCMAKE_BUILD_TYPE=Release \
--DCMAKE_TOOLCHAIN_FILE=../cmake/emu-cxx-toolchain.cmake
+-DCMAKE_TOOLCHAIN_FILE=../cmake/emu-toolchain.cmake
 make -j4
 ```
 
@@ -18,6 +18,16 @@ Build for testing on x86:
 mkdir build-x86 && cd build-x86
 cmake .. \
 -DCMAKE_BUILD_TYPE=Debug
+make -j4
+```
+
+Build for Kokkos testing with emu hardware/simulator:
+```
+mkdir build-kokkos-hw && cd build-kokkos-hw
+cmake .. \
+-DCMAKE_BUILD_TYPE=Release \
+-DCMAKE_TOOLCHAIN_FILE=../cmake/emu-toolchain.cmake \
+-DUSE_KOKKOS=1
 make -j4
 ```
 

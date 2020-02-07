@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <cilk/cilk.h>
+#include <emu_c_utils/emu_c_utils.h>
 #include <assert.h>
 #include <string.h>
-#include <emu_c_utils/emu_c_utils.h>
 
 #include "recursive_spawn.h"
 #include "common.h"
