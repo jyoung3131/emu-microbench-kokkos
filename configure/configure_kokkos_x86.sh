@@ -2,7 +2,7 @@
 # Execute from the main directory using ./configure/configure_<my_platform>
 
 BACKEND=kokkos
-COMPILER=hw
+COMPILER=x86
 
 BUILD_DIR=build-${BACKEND}-${COMPILER}
 
@@ -19,11 +19,10 @@ CXX=emu-cc
 FLAGS=""
 
 #Make sure to use tabs rather than spaces for newline entries
-cmake 	-D CMAKE_BUILD_TYPE=Release \
-	-D CMAKE_C_FLAGS_RELEASE="${CMAKE_C_FLAGS} ${FLAGS}" \
-	-D CMAKE_TOOLCHAIN_FILE=../cmake/emu-toolchain.cmake \
+cmake 	-D CMAKE_BUILD_TYPE=Debug \
     	-D USE_KOKKOS=1 \
     	-D KOKKOS_PREFIX=${KOKKOS_PATH} \
 	..	
+#-D CMAKE_TOOLCHAIN_FILE=../cmake/emu-toolchain.cmake \
 #-D CMAKE_C_COMPILER=${CC} \
 #-D CMAKE_CXX_COMPILER=${CXX} \

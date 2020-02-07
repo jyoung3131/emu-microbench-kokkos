@@ -3,18 +3,19 @@
 #    /opt/papi
 #)
 
-set(KOKKOS_PREFIX ${KOKKOS_PATH})
+#You can explicitly set the path here or in the "configure" script
+#set(KOKKOS_PREFIX ${KOKKOS_PATH})
 
 find_library(KOKKOS_LIBRARIES
     # Pick the static library first for easier run-time linking.
-    NAMES libkokkos.a
-    HINTS ${KOKKOS_PREFIX}/core/unit_test
+    NAMES libkokkos.2001.a
+    HINTS .
     
 )
 
-find_path(PAPI_INCLUDE_DIRS
-    NAMES Kokkos_Core.h
-    HINTS ${KOKKOS_PREFIX}/include
+find_path(KOKKOS_INCLUDE_DIRS
+    NAMES Kokkos_Core.hpp KokkosCore_config.h
+    PATHS ${KOKKOS_PREFIX}/include ${KOKKOS_PREFIX}/core/src ${KOKKOS_PREFIX}/core/unit_test ${KOKKOS_PREFIX}/containers/src ${KOKKOS_PREFIX}/algorithms/src ${KOKKOS_PREFIX}/core/src/eti ${KOKKOS_PREFIX}/tpls/mdspan/include
 )
 
 include(FindPackageHandleStandardArgs)

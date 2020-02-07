@@ -8,7 +8,8 @@ SET (USE_KOKKOS 0 CACHE BOOL "If set, builds with KOKKOS support")
 
 # Use the 2011 standards for C and C++
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# Switch to 2014 for included mdspan support
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 # Turn warnings into errors
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
@@ -38,7 +39,9 @@ include_directories(${EMU_C_UTILS_INCLUDE_DIRS})
 if (USE_KOKKOS)
 	find_package(kokkos REQUIRED)
 	link_libraries(${KOKKOS_LIBRARIES})
-	include_directories(${KOKKOS_INCLUDE_DIRS})
+#	include_directories(${KOKKOS_INCLUDE_DIRS})
+# Hardcode all the different include directories	
+	include_directories(${KOKKOS_PREFIX}/include ${KOKKOS_PREFIX}/core/src ${KOKKOS_PREFIX}/core/unit_test ${KOKKOS_PREFIX}/containers/src ${KOKKOS_PREFIX}/algorithms/src ${KOKKOS_PREFIX}/core/src/eti ${KOKKOS_PREFIX}/tpls/mdspan/include)
 ENDIF ()
 
 
@@ -63,7 +66,14 @@ function(add_exe filename)
     install(TARGETS ${name} RUNTIME DESTINATION ".")
 endfunction()
 
-add_exe(local_stream.c)
+
+if (USE_KOKKOS)
+	add_exe(local_stream_kokkos.cpp)
+ENDIF ()
+
+#Native versions of apps
+#add_exe(allocation.cc)
+#add_exe(local_stream.c)
 #add_exe(global_stream.c)
 #add_exe(global_stream_1d.c)
 #add_exe(global_reduce.c)
@@ -77,7 +87,6 @@ add_exe(local_stream.c)
 #add_exe(hot_range.c)
 #add_exe(hot_range_chunked.c)
 
-add_exe(allocation.cc)
 
 # 'locks' uses assembly, disable for non-Emu platform
 if (CMAKE_SYSTEM_NAME STREQUAL "Emu1")
