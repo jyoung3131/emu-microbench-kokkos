@@ -13,16 +13,16 @@ rm -rf CMake*
 #KOKKOS_PATH=
 
 #Specify the compilers to use
-CC=emu-cc
-CXX=emu-cc
+CC=gcc-7
+CXX=g++-7
 
 FLAGS=""
 
 #Make sure to use tabs rather than spaces for newline entries
 cmake 	-D CMAKE_BUILD_TYPE=Debug \
+	-D CMAKE_C_COMPILER=${CC} \
+	-D CMAKE_CXX_COMPILER=${CXX} \
     	-D USE_KOKKOS=1 \
     	-D KOKKOS_PREFIX=${KOKKOS_PATH} \
 	..	
 #-D CMAKE_TOOLCHAIN_FILE=../cmake/emu-toolchain.cmake \
-#-D CMAKE_C_COMPILER=${CC} \
-#-D CMAKE_CXX_COMPILER=${CXX} \

@@ -6,10 +6,10 @@
 #include <assert.h>
 #include <string.h>
 
+#include <emu_c_utils/emu_c_utils.h>
+
 // Include Kokkos core headers
 #include <Kokkos_Core.hpp>
-
-#include <emu_c_utils/emu_c_utils.h>
 
 #include "recursive_spawn.h"
 #include "common.h"
@@ -17,15 +17,12 @@
 namespace Kokkos {
 namespace Experimental {
    extern void * ers;
+   //EmuHostSpace, EmuReplicatedSpace, EmuLocalSpace
    extern EmuStridedSpace es;
    extern void initialize_memory_space();
 }}
 
 typedef Kokkos::View< long*, Kokkos::Experimental::EmuStridedSpace > ViewVectorType;
-
-//Cheat and make N a global variable
-long N;
-
 
 typedef struct local_stream_data {
     ViewVectorType a;
@@ -33,7 +30,7 @@ typedef struct local_stream_data {
     ViewVectorType c;
     long n;
     long num_threads;
-   local_stream_data(): a("a",(size_t)N), b("b",(size_t)N), c("c",(size_t)N) {}
+   local_stream_data(long N): a("a",(size_t)N), b("b",(size_t)N), c("c",(size_t)N) {}
 } local_stream_data;
 
 void
@@ -70,6 +67,7 @@ local_stream_add_serial(local_stream_data * data)
 {
     Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
     //for (long i = 0; i < data->n; ++i) {
+	printf("Iteration %d of %llu\n",i,data->n);
         data->c(i) = data->a(i) + data->b(i);
     } );
 }
@@ -203,14 +201,21 @@ int main(int argc, char** argv)
   Kokkos::initialize( argc, argv );
   {
 
+    LOG("Starting Kokkos memory space initialization\n"); fflush(stdout);
     Kokkos::Experimental::initialize_memory_space();
 
-    N = 1L << args.log2_num_elements;
+    long N = 1L << args.log2_num_elements;
+    //N=64;
+    LOG("N is %li\n",N); fflush(stdout);
+
+	
     LOG("Initializing arrays with %li elements each (%li MiB)\n",
         N, (N * sizeof(long)) / (1024*1024)); fflush(stdout);
-    local_stream_data data;
+    
+    local_stream_data data(N);
     data.num_threads = args.num_threads;
-    local_stream_init(&data, N);
+    //local_stream_init(&data, N);
+    data.n=N;
     LOG("Doing vector addition using %s\n", args.mode); fflush(stdout);
 
     #define RUN_BENCHMARK(X) local_stream_run(&data, args.mode, X, args.num_trials)
