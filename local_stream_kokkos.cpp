@@ -17,12 +17,12 @@
 namespace Kokkos {
 namespace Experimental {
    extern void * ers;
-   //EmuHostSpace, EmuReplicatedSpace, EmuLocalSpace
-   extern EmuStridedSpace es;
+   //EmuHostSpace, EmuReplicatedSpace, EmuLocalSpace, EmuStridedSpace
+   extern EmuLocalSpace es;
    extern void initialize_memory_space();
 }}
 
-typedef Kokkos::View< long*, Kokkos::Experimental::EmuStridedSpace > ViewVectorType;
+typedef Kokkos::View< long*, Kokkos::Experimental::EmuLocalSpace > ViewVectorType;
 
 typedef struct local_stream_data {
     ViewVectorType a;
@@ -37,37 +37,15 @@ void
 local_stream_init(local_stream_data * data, long n)
 {
     data->n = n;
-    //data->a = (long*)mw_localmalloc(n * sizeof(long), data);
-    //assert(data->a);
-    //data->b = (long*)mw_localmalloc(n * sizeof(long), data);
-    //assert(data->b);
-    //data->c = (long*)mw_localmalloc(n * sizeof(long), data);
-    //assert(data->c);
-//#ifndef NO_VALIDATE
-//    emu_local_for_set_long(data->a, n, 1);
-//    emu_local_for_set_long(data->b, n, 2);
-//    emu_local_for_set_long(data->c, n, 0);
-//#endif
 }
 
 //Kokkos::finalize handles deintialization
-/*
-void
-local_stream_deinit(local_stream_data * data)
-{
-    free(data->a);
-    free(data->b);
-    free(data->c);
-}
-*/
-
+//void local_stream_deinit(local_stream_data * data)
 
 void
 local_stream_add_serial(local_stream_data * data)
 {
     Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
-    //for (long i = 0; i < data->n; ++i) {
-	printf("Iteration %d of %llu\n",i,data->n);
         data->c(i) = data->a(i) + data->b(i);
     } );
 }
@@ -77,7 +55,6 @@ local_stream_add_cilk_for(local_stream_data * data)
 {
     //#pragma cilk grainsize = data->n / data->num_threads
     Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
-    //cilk_for (long i = 0; i < data->n; ++i) {
         data->c(i) = data->a(i) + data->b(i);
     } );
 }
@@ -87,7 +64,6 @@ static void
 recursive_spawn_add_worker(long begin, long end, local_stream_data *data)
 {
     Kokkos::parallel_for(data->n, KOKKOS_LAMBDA (const long i) {
-    //for (long i = begin; i < end; ++i) {
         data->c(i) = data->a(i) + data->b(i);
     } );
 }
@@ -205,7 +181,7 @@ int main(int argc, char** argv)
     Kokkos::Experimental::initialize_memory_space();
 
     long N = 1L << args.log2_num_elements;
-    //N=64;
+    
     LOG("N is %li\n",N); fflush(stdout);
 
 	

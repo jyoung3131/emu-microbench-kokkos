@@ -5,11 +5,12 @@ include (ExternalProject)
 project(emu-microbench C ASM CXX)
 
 SET (USE_KOKKOS 0 CACHE BOOL "If set, builds with KOKKOS support")
+SET (USE_KOKKOS_X86 0 CACHE BOOL "If set, builds with KOKKOS support for x86")
 
 # Use the 2011 standards for C and C++
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
 # Switch to 2014 for included mdspan support
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
 # Turn warnings into errors
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
@@ -69,12 +70,15 @@ endfunction()
 
 if (USE_KOKKOS)
 	add_exe(local_stream_kokkos.cpp)
+	add_exe(global_stream_kokkos.cpp)
+
+ELSE()
+add_exe(local_stream.c)
+add_exe(global_stream.c)
 ENDIF ()
 
 #Native versions of apps
 #add_exe(allocation.cc)
-#add_exe(local_stream.c)
-#add_exe(global_stream.c)
 #add_exe(global_stream_1d.c)
 #add_exe(global_reduce.c)
 #add_exe(pointer_chase.c)
