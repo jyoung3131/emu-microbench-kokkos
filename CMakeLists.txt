@@ -73,8 +73,8 @@ if (USE_KOKKOS)
 	add_exe(global_stream_kokkos.cpp)
 
 ELSE()
-add_exe(local_stream.c)
-add_exe(global_stream.c)
+	add_exe(local_stream.c)
+	add_exe(global_stream.c)
 ENDIF ()
 
 #Native versions of apps
@@ -82,7 +82,9 @@ ENDIF ()
 #add_exe(global_stream_1d.c)
 #add_exe(global_reduce.c)
 #add_exe(pointer_chase.c)
-#add_exe(ping_pong.c)
+#add_exe(ping_pong ping_pong.c)
+#add_executable(ping_pong_debug ping_pong.c)
+#target_compile_definitions(ping_pong_debug PUBLIC -DDEBUG)
 #add_exe(local_sort.c)
 #add_exe(bulk_copy.c)
 #add_exe(scatter.c)
@@ -91,6 +93,8 @@ ENDIF ()
 #add_exe(hot_range.c)
 #add_exe(hot_range_chunked.c)
 
+#add_exe(allocation.cc)
+#add_exe(vector.cc)
 
 # 'locks' uses assembly, disable for non-Emu platform
 if (CMAKE_SYSTEM_NAME STREQUAL "Emu1")
