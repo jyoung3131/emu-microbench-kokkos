@@ -71,7 +71,7 @@ If this directory exists, it can be cleaned of scripts and results and all tests
 ```
 ./generate_tests.py --clean emusim test_suites/emu-global-stream.json emusim_gstream_tests
 ```
-For our example in Step 3, we expect to see three run scripts:
+For our example in Step 3, we expect to see three scripts, one for each thread size. These can be launched manually or using the serial/parallel runscripts in the main test directory.
 
 ```
 []$cd emusim_gstream_tests
