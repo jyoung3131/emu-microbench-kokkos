@@ -62,15 +62,15 @@ We assume that all the files above are in the same directory. Note that the test
     "num_trials" : 10
 }
 ]
-
+```
 4) Using generate_test.py with the JSON files above, the user can then generate their test sweeps:
 ```
 ./generate_tests.py emusim test_suites/emu-global-stream.json emusim_gstream_tests
-
+```
 If this directory exists, it can be cleaned of scripts and results and all tests can be regenerated using:
-
+```
 ./generate_tests.py --clean emusim test_suites/emu-global-stream.json emusim_gstream_tests
-
+```
 For our example in Step 3, we expect to see three run scripts:
 
 ```
@@ -79,10 +79,9 @@ For our example in Step 3, we expect to see three run scripts:
 joblist  results  scripts
 []$ls scripts
 global_stream.10.128.cilk_for.1.emusim.sh  global_stream.10.256.cilk_for.1.emusim.sh  global_stream.10.512.cilk_for.1.emusim.sh
-
-5) The run_tets_serial.sh and launch_parallel_tests.sh scripts can then be used to run tests serially or in parallel. Results will
+```
+5) The run_tests_serial.sh and launch_parallel_tests.sh scripts can then be used to run tests serially or in parallel. Results will
 show up in the results directory.
 
-6) create_emu_hw_tarball.sh can be used to create a custom tarball with the generated tests along with the serial runscript. This
-can then be copied to the Chick and run in either single-node or multi-node mode.
+6) create_emu_hw_tarball.sh can be used to create a custom tarball with the generated tests along with the serial runscript. This can then be copied to the Chick and run in either single-node or multi-node mode.
 
