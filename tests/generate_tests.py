@@ -67,7 +67,7 @@ def check_local_config(local_config):
             if not os.path.isfile(path):
                 raise Exception("Invalid path for {} executable: {}".format(benchmark, path))
 
-        if local_config["platform"] not in ["native", "emusim", "emusim_profile", "emu", "emusim-chick-box", "emusim-validation"]:
+        if local_config["platform"] not in ["native", "emusim", "emusim_profile", "emu-singlenode", "emu-multinode", "emusim-chick-box", "emusim-validation"]:
             raise Exception("Platform {} not supported".format(local_config["platform"]))
 
     except KeyError as e:
@@ -129,12 +129,12 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
         {native_flags} \\
         {exe} \\"""
 
-    elif local_config["platform"] == "emu":
+    elif local_config["platform"] == "emu-singlenode":
         template += """
         emu_handler_and_loader 0 0 {exe} -- \\"""
 
     # Emu hardware (multi node) command line
-    elif local_config["platform"] == "emuchick":
+    elif local_config["platform"] == "emu-multinode":
         template += """
         emu_multinode_exec 0 --thread_quit_off -- {exe} \\"""
 
@@ -216,7 +216,7 @@ def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_alg
 
 def main():
     parser = argparse.ArgumentParser(prog='generate_tests.py', usage='%(prog)s <platform> <suite> <dir> \nEx: %(prog)s <optional_args> emusim test_suites/emu.json global_stream_test_dir')
-    parser.add_argument("platform", help="Hardware platform to generate scripts for (native,emusim,emusim_profile,emu,emusim-chick-box,emusim-validation")
+    parser.add_argument("platform", help="Hardware platform to generate scripts for one of the following: [native, emusim, emusim-chick-box, emusim_profile, emusim-validation, emu-singlenode, emu-multinode]")
     parser.add_argument("suite", help="Path to json file containing test suite definition")
     parser.add_argument("dir", help="Output directory for generated scripts and results")
     parser.add_argument("-f", "--force", default=False, action="store_true", help="Continue even if the results directory is not empty")
