@@ -155,7 +155,7 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
         -o {outdir}/{name} \\
         -- {exe} \\"""
 
-    if args.benchmark in ["local_stream", "global_stream", "global_stream_1d", "local_stream_cxx"]:
+    if args.benchmark in ["local_stream", "global_stream", "global_stream_kokkos", "global_stream_1d", "local_stream_cxx"]:
         # Generate the benchmark command line
         template += """
         {spawn_mode} {log2_num_elements} {num_threads} 1 \\

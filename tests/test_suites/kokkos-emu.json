@@ -5,5 +5,12 @@
     "num_threads" : [128, 256, 512],
     "spawn_mode" : ["cilk_for"],
     "num_trials" : 1
+},
+{
+    "benchmark": "global_stream_kokkos",
+    "log2_num_elements" : 10,
+    "num_threads" : [128, 256, 512],
+    "spawn_mode" : ["cilk_for"],
+    "num_trials" : 1
 }
 ]

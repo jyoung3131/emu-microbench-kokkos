@@ -68,14 +68,14 @@ function(add_exe filename)
 endfunction()
 
 
+#This setup just allows us to compile a subset of applications for testing
 if (USE_KOKKOS)
-	add_exe(local_stream_kokkos.cpp)
 	add_exe(global_stream_kokkos.cpp)
+	add_exe(global_reduce_kokkos.cpp)
 
 ELSE()
-	add_exe(local_stream.c)
 	add_exe(global_stream.c)
-	add_exe(ping_pong ping_pong.c)
+	add_exe(global_reduce.c)
 ENDIF ()
 
 #Native versions of apps
