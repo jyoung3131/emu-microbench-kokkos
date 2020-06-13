@@ -1,9 +1,0 @@
-#!/bin/bash -e
-while IFS= read -r -u9 cmd; do
-    date
-    echo "Running $cmd"
-    $cmd
-done 9< $1 #joblist
-date
-echo "Done!"
-
