@@ -126,6 +126,7 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
     # Emu hardware (single node) command line
     if local_config["platform"] == "native":
         template += """
+        {native_flags} \\
         {exe} \\"""
 
     elif local_config["platform"] == "emu":
@@ -214,8 +215,8 @@ def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_alg
     return script_names
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("platform", help="Hardware platform to generate scripts for")
+    parser = argparse.ArgumentParser(prog='generate_tests.py', usage='%(prog)s <platform> <suite> <dir> \nEx: %(prog)s <optional_args> emusim test_suites/emu.json global_stream_test_dir')
+    parser.add_argument("platform", help="Hardware platform to generate scripts for (native,emusim,emusim_profile,emu,emusim-chick-box,emusim-validation")
     parser.add_argument("suite", help="Path to json file containing test suite definition")
     parser.add_argument("dir", help="Output directory for generated scripts and results")
     parser.add_argument("-f", "--force", default=False, action="store_true", help="Continue even if the results directory is not empty")
