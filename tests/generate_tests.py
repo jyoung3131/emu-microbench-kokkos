@@ -178,7 +178,15 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
         --num_trials {num_trials} \\
         &>> $LOGFILE
         """
-
+    elif args.benchmark in ["hybrid_bfs", "kokkos_bfs"]:
+        # Generate the benchmark command line
+        template += """
+        --algorithm {algorithm} \\
+        --distributed_load {distributed_load} \\
+        --num_trials {num_trials} \\
+        --graph_filename {graph_filename} \\
+        &>> $LOGFILE
+        """
     elif args.benchmark == "ping_pong":
         # Generate the benchmark command line
         template += """

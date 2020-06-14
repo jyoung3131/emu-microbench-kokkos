@@ -11,5 +11,5 @@ then
 	exit 1
 fi
 
-#Create a tarball with this script, the serial run script, and the test directory
-tar cvzf $1.tgz $1 create_emu_hw_tarball.sh runall_tests_serial.sh 
+#Create a tarball with the test scripts and mwx directories
+tar cvzf $1.tgz generate_tests.py *.sh *.json test_suites/ ../build-kokkos-hw/*.mwx
