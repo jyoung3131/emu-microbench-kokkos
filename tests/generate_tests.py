@@ -67,7 +67,7 @@ def check_local_config(local_config):
             if not os.path.isfile(path):
                 raise Exception("Invalid path for {} executable: {}".format(benchmark, path))
 
-        if local_config["platform"] not in ["native", "emusim", "emusim_profile", "emu-singlenode", "emu-multinode", "emusim-chick-box", "emusim-validation"]:
+        if local_config["platform"] not in ["native", "emusim", "emusim-profile", "emu-singlenode", "emu-multinode", "emusim-chick-box", "emusim-validation"]:
             raise Exception("Platform {} not supported".format(local_config["platform"]))
 
     except KeyError as e:
@@ -81,7 +81,7 @@ def pass_args(arg_names):
     """Generate a template for a command line"""
     return "\n".join("--{0} {{{0}}} \\".format(a) for a in arg_names)
 
-def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs):
+def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, trust_path):
     """Generate a script to run the experiment specified by the independent variables in args"""
 
     # Add platform name to args
@@ -139,7 +139,7 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
         emu_multinode_exec 0 --thread_quit_off -- {exe} \\"""
 
     # Emu profiler command line
-    elif "emusim_profile" in local_config["platform"]:
+    elif "emusim-profile" in local_config["platform"]:
         template += """
         {emusim_profile_exe}    \\
         {outdir}/profile.{name} \\
@@ -210,14 +210,16 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
     # Return the path to the generated script
     return script_name
 
-def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_algs):
+def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_algs,trust_path):
     """Generate a script for each permutation of parameters in the test suite"""
 
     script_names = []
-    check_local_config(local_config)
+    
+    if(trust_path == False):
+        check_local_config(local_config)
     for args in iterSuite(suite):
         check_args(args, local_config)
-        script_name = generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs)
+        script_name = generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, trust_path)
         script_names.append(script_name)
 
     return script_names
@@ -227,6 +229,7 @@ def main():
     parser.add_argument("platform", help="Hardware platform to generate scripts for one of the following: [native, emusim, emusim-chick-box, emusim_profile, emusim-validation, emu-singlenode, emu-multinode]")
     parser.add_argument("suite", help="Path to json file containing test suite definition")
     parser.add_argument("dir", help="Output directory for generated scripts and results")
+    parser.add_argument("--trust-path", "--tp", default=False, action="store_true", help="Trust that the specified paths in a JSON are correct without checking them")
     parser.add_argument("-f", "--force", default=False, action="store_true", help="Continue even if the results directory is not empty")
     parser.add_argument("--clean", default=False, action="store_true", help="Delete generated results before regenerating scripts")
     parser.add_argument("--no-redirect", default=False, action="store_true", help="Don't redirect output to file")
@@ -274,7 +277,11 @@ def main():
     with open("local_config.json") as f:
         local_config = json.load(f)[args.platform]
         local_config["platform"] = args.platform
-        check_local_config(local_config)
+        #Allow for optionally trusting that the path exists
+        #Otherwise the user is required to specify the correct location
+        #of exe files and they are checked here
+        if(args.trust_path == False):
+            check_local_config(local_config)
 
     # Generate the scripts
     script_names = generate_suite(
@@ -283,7 +290,8 @@ def main():
         out_dir=out_dir,
         local_config=local_config,
         no_redirect=args.no_redirect,
-        no_algs=args.no_algs
+        no_algs=args.no_algs,
+        trust_path=args.trust_path
     )
 
     # Write paths to all generated scripts to a file

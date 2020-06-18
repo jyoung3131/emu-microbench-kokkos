@@ -1,0 +1,16 @@
+[
+{
+    "benchmark": "kokkos_bfs",
+    "algorithm": "beamer_hybrid",
+    "distributed_load" : 1,
+    "num_trials" : 1,
+    "graph_filename" : ["${EMU_HW_DATASETS}/graph500-scale10"]
+},
+{
+    "benchmark": "hybrid_bfs",
+    "algorithm": "beamer_hybrid",
+    "distributed_load" : 1,
+    "num_trials" : 1,
+    "graph_filename" : ["${EMU_HW_DATASETS}/graph500-scale10"]
+}
+]

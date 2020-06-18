@@ -1,0 +1,30 @@
+[
+{
+    "benchmark": "global_stream",
+    "log2_num_elements" : [10,12,14],
+    "num_threads" : [128, 256, 512],
+    "spawn_mode" : ["cilk_for"],
+    "num_trials" : 1
+},
+{
+    "benchmark": "global_stream_kokkos",
+    "log2_num_elements" : [10,12,14],
+    "num_threads" : [128, 256, 512],
+    "spawn_mode" : ["cilk_for"],
+    "num_trials" : 1
+},
+{
+    "benchmark": "kokkos_bfs",
+    "algorithm": "beamer_hybrid",
+    "distributed_load" : 1,
+    "num_trials" : 1,
+    "graph_filename" : ["/projects/bigdata/g500-emu/graph500-scale6","/projects/bigdata/g500-emu/graph500-scale8"]
+},
+{
+    "benchmark": "hybrid_bfs",
+    "algorithm": "beamer_hybrid",
+    "distributed_load" : 1,
+    "num_trials" : 1,
+    "graph_filename" : ["/projects/bigdata/g500-emu/graph500-scale6","/projects/bigdata/g500-emu/graph500-scale8"]
+}
+]
