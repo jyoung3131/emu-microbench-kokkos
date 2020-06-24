@@ -28,7 +28,7 @@ typedef struct global_stream_data {
 #define INDEX(PTR, BLOCK, I) (PTR[I >> PRIORITY(BLOCK)][I&(BLOCK-1)])
 
 void
-global_stream_init(global_stream_data * data, long n)
+global_stream_init(global_stream_data * data, long n, long validation_flag)
 {
     data->n = n;
     emu_chunked_array_replicated_init(&data->array_a, n, sizeof(long));
@@ -46,11 +46,13 @@ global_stream_init(global_stream_data * data, long n)
         memcpy(remote_data, data, sizeof(global_stream_data));
     }
 #endif
-#ifndef NO_VALIDATE
+
+if(validation_flag == 1)
+{
     emu_chunked_array_set_long(&data->array_a, 1);
     emu_chunked_array_set_long(&data->array_b, 2);
     emu_chunked_array_set_long(&data->array_c, 0);
-#endif
+}
 }
 
 void
@@ -281,16 +283,18 @@ int main(int argc, char** argv)
         long log2_num_elements;
         long num_threads;
         long num_trials;
+	long validation;
     } args;
 
-    if (argc != 5) {
-        LOG("Usage: %s mode log2_num_elements num_threads num_trials\n", argv[0]);
+    if (argc != 6) {
+        LOG("Usage: %s mode log2_num_elements num_threads num_trials validation\n", argv[0]);
         exit(1);
     } else {
         args.mode = argv[1];
         args.log2_num_elements = atol(argv[2]);
         args.num_threads = atol(argv[3]);
         args.num_trials = atol(argv[4]);
+        args.validation = atol(argv[5]);
 
         if (args.log2_num_elements <= 0) { LOG("log2_num_elements must be > 0"); exit(1); }
         if (args.num_threads <= 0) { LOG("num_threads must be > 0"); exit(1); }
@@ -309,7 +313,7 @@ int main(int argc, char** argv)
     LOG("Initializing arrays with %li elements each (%li MiB total, %li MiB per nodelet)\n", 3 * n, 3 * mbytes, 3 * mbytes_per_nodelet);
     fflush(stdout);
     data.num_threads = args.num_threads;
-    global_stream_init(&data, n);
+    global_stream_init(&data, n, args.validation);
     LOG("Doing vector addition using %s\n", args.mode); fflush(stdout);
 
     #define RUN_BENCHMARK(X) global_stream_run(&data, args.mode, X, args.num_trials)
@@ -338,11 +342,14 @@ int main(int argc, char** argv)
     } else {
         LOG("Mode %s not implemented!", args.mode);
     }
-#ifndef NO_VALIDATE
-    LOG("Validating results...");
-    global_stream_validate(&data);
-    LOG("OK\n");
-#endif
+
+    if(args.validation == 1)
+    {
+      LOG("Validating results...");
+      global_stream_validate(&data);
+      LOG("OK\n");
+    }
+
     global_stream_deinit(&data);
     return 0;
 }

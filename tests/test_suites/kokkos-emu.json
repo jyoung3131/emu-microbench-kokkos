@@ -1,15 +1,15 @@
 [
 {
     "benchmark": "global_stream",
-    "log2_num_elements" : [10,12,14],
-    "num_threads" : [128, 256, 512],
-    "spawn_mode" : ["cilk_for"],
+    "log2_num_elements" : [18,20,22,24],
+    "num_threads" : [512],
+    "spawn_mode" : ["cilk_for","recursive_remote_spawn"],
     "num_trials" : 1
 },
 {
     "benchmark": "global_stream_kokkos",
-    "log2_num_elements" : [10,12,14],
-    "num_threads" : [128, 256, 512],
+    "log2_num_elements" : [18,20,22,24],
+    "num_threads" : [512],
     "spawn_mode" : ["cilk_for"],
     "num_trials" : 1
 }

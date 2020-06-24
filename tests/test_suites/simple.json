@@ -1,0 +1,10 @@
+[
+{
+    "benchmark": "global_stream",
+    "log2_num_elements" : [18],
+    "num_threads" : [512],
+    "spawn_mode" : ["cilk_for"],
+    "num_trials" : 2,
+    "validation" : 0
+}
+]

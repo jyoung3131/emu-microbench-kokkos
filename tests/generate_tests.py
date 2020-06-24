@@ -81,7 +81,7 @@ def pass_args(arg_names):
     """Generate a template for a command line"""
     return "\n".join("--{0} {{{0}}} \\".format(a) for a in arg_names)
 
-def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, trust_path):
+def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, rel_path):
     """Generate a script to run the experiment specified by the independent variables in args"""
 
     # Add platform name to args
@@ -131,7 +131,7 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
 
     elif local_config["platform"] == "emu-singlenode":
         template += """
-        emu_handler_and_loader 0 0 {exe} -- \\"""
+        emu_handler_and_loader 0 0 -- {exe} \\"""
 
     # Emu hardware (multi node) command line
     elif local_config["platform"] == "emu-multinode":
@@ -158,7 +158,7 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
     if args.benchmark in ["local_stream", "global_stream", "global_stream_kokkos", "global_stream_1d", "local_stream_cxx"]:
         # Generate the benchmark command line
         template += """
-        {spawn_mode} {log2_num_elements} {num_threads} 1 \\
+        {spawn_mode} {log2_num_elements} {num_threads} {num_trials} 0\\
         &>> $LOGFILE
         """
     elif args.benchmark in ["global_stream_cxx"]:
@@ -210,16 +210,16 @@ def generate_script(args, script_dir, out_dir, local_config, no_redirect, no_alg
     # Return the path to the generated script
     return script_name
 
-def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_algs,trust_path):
+def generate_suite(suite, script_dir, out_dir, local_config, no_redirect, no_algs,rel_path):
     """Generate a script for each permutation of parameters in the test suite"""
 
     script_names = []
     
-    if(trust_path == False):
+    if(rel_path == False):
         check_local_config(local_config)
     for args in iterSuite(suite):
         check_args(args, local_config)
-        script_name = generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, trust_path)
+        script_name = generate_script(args, script_dir, out_dir, local_config, no_redirect, no_algs, rel_path)
         script_names.append(script_name)
 
     return script_names
@@ -229,19 +229,20 @@ def main():
     parser.add_argument("platform", help="Hardware platform to generate scripts for one of the following: [native, emusim, emusim-chick-box, emusim_profile, emusim-validation, emu-singlenode, emu-multinode]")
     parser.add_argument("suite", help="Path to json file containing test suite definition")
     parser.add_argument("dir", help="Output directory for generated scripts and results")
-    parser.add_argument("--trust-path", "--tp", default=False, action="store_true", help="Trust that the specified paths in a JSON are correct without checking them")
+    parser.add_argument("--relative-path", "--rp", default=False, action="store_true", help="Use a relative path in a JSON but don't check them when generating scripts")
     parser.add_argument("-f", "--force", default=False, action="store_true", help="Continue even if the results directory is not empty")
     parser.add_argument("--clean", default=False, action="store_true", help="Delete generated results before regenerating scripts")
     parser.add_argument("--no-redirect", default=False, action="store_true", help="Don't redirect output to file")
     parser.add_argument("--no-algs", default=False, action="store_true", help="Don't run any algorithms, just do incremental graph construction")
     args = parser.parse_args()
 
+
     # Prepare directories
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
     out_dir = os.path.join(args.dir, "results")
     script_dir = os.path.join(args.dir, "scripts")
-
+    
     # Create output dir if it doesn't exist
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -280,8 +281,17 @@ def main():
         #Allow for optionally trusting that the path exists
         #Otherwise the user is required to specify the correct location
         #of exe files and they are checked here
-        if(args.trust_path == False):
+        if(args.relative_path == False):
             check_local_config(local_config)
+
+    # Allow for the use of environment variables like EXP_BASE to define the base directory
+    os_env_base_dir=os.environ['EXP_BASE']
+    # If this variable is defined just append the env variable name to the front of these variables
+    # The user can then change the base directory as needed
+    if (os_env_base_dir != ''):
+        print("Using EXP_BASE to allow for user-defined base directory\nEXP_BASE=",os_env_base_dir)
+        out_dir = os_env_base_dir+"/"+out_dir
+        script_dir = os_env_base_dir+"/"+script_dir
 
     # Generate the scripts
     script_names = generate_suite(
@@ -291,7 +301,7 @@ def main():
         local_config=local_config,
         no_redirect=args.no_redirect,
         no_algs=args.no_algs,
-        trust_path=args.trust_path
+        rel_path=args.relative_path
     )
 
     # Write paths to all generated scripts to a file

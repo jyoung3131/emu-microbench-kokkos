@@ -16,6 +16,7 @@ absolute paths must be entered by the user.
 * run_tests_serial.sh - Run all tests in a serial fashion (all platforms)
 * launch_parallel_tests.sh - Uses GNU parallel to run multiple tests simultaneously. Can be used on native and emusim.. platforms only.
 * create_emu_hw_tarball.sh - Allows a user to create a tarball for moving tests and the serial runscript to the Emu hardware test platform
+* set_emu_exp_path.sh - an environment script to allow for using relative paths when generating new experiments. For example, this can be used to generate experiments for the Emu HW.
 
 ## Generating Tests
 
